@@ -1,0 +1,22 @@
+{
+  "name": "url-short",
+  "version": "1.0.0",
+  "description": "URL Short App with Dashboard",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon app.js"
+  },
+  "keywords": [
+    "url",
+    "shortner",
+    "app",
+    "with",
+    "admin",
+    "panel"
+  ],
+  "author": "MariusTN",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
