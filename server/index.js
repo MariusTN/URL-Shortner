@@ -3,6 +3,18 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const yup = require('yup');
+const {
+    nanoid
+} = require('nanoid');
+const monk = require('monk');
+
+require('dotenv').config();
+
+
+const db = monk(process.env.MONGO_URI)
+const urls = db.get('urls');
+urls.createIndex('name');
+
 
 const app = express();
 
@@ -11,7 +23,7 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.static('./public'));
 
-app.get('/', (req,res) =>{
+app.get('/', (req, res) => {
     res.json({
         message: 'larallyn.link - short urls for your code'
     });
@@ -31,9 +43,58 @@ const schema = yup.object().shape({
 
 })
 
-app.post('/url', (req,res) =>{
-    //TODO: create a short url
+app.post('/url', async (req, res, next) => {
+    let {
+        alias,
+        url
+    } = req.body;
+
+    try {
+        await schema.validate({
+            alias,
+            url
+        });
+        if (!alias) {
+            alias = nanoid(10);
+        }
+        else {
+            const existing = await urls.findOne({
+                alias
+            });
+            if (existing) {
+                throw new Error('Already existing! Choose a new one!')
+            }
+        }
+
+        alias = alias.toLowerCase();
+
+        const newUrl ={
+            url,
+            alias,
+        };
+
+        const created = await urls.insert(newUrl);
+        res.json(created);
+
+    } catch (error) {
+        if (error.message.startsWith('E11000')){
+            error.message = "alias in use";
+        }
+        next(error);
+    }
 });
+
+app.use((error, req, res, next) => {
+    if (error.status) {
+        res.status(error.status);
+    } else {
+        res.status(500);
+    }
+    res.json({
+        message: error.message,
+        stack: process.env.Node_ENV === 'production' ? 'Hey' : error.stack
+    })
+})
 
 
 
